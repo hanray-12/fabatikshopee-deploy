@@ -1,120 +1,91 @@
-import './bootstrap';
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-Alpine.start();
+import "./bootstrap";
 
 /**
- * CART AJAX QTY
- * - tombol + / -
- * - input qty (enter / blur)
+ * Close all <details> when click outside or ESC
  */
-function moneyIDR(n) {
-  const num = Number(n || 0);
-  return num.toLocaleString('id-ID');
-}
+function setupDetailsAutoClose() {
+  const detailsEls = Array.from(document.querySelectorAll("details[data-autoclose='true']"));
 
-async function patchQty(productId, action, quantity = null) {
-  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  document.addEventListener("click", (e) => {
+    detailsEls.forEach((d) => {
+      if (!d.open) return;
+      const summary = d.querySelector("summary");
+      const dropdown = d.querySelector("[data-dropdown='true']");
+      const clickedInside = d.contains(e.target);
+      const clickedSummary = summary && summary.contains(e.target);
+      const clickedDropdown = dropdown && dropdown.contains(e.target);
 
-  const payload = { action };
-  if (quantity !== null) payload.quantity = quantity;
+      // kalau klik di luar details -> tutup
+      if (!clickedInside) d.removeAttribute("open");
 
-  const res = await fetch(`/cart/${productId}/qty`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': token,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify(payload),
+      // kalau klik link di dropdown -> tutup (biar feel premium)
+      if (clickedDropdown && e.target.closest("a,button")) {
+        // biar tetap jalan actionnya, tutup setelah sedikit delay
+        setTimeout(() => d.removeAttribute("open"), 50);
+      }
+
+      // klik summary biarin toggle normal
+      if (clickedSummary) return;
+    });
   });
 
-  const data = await res.json();
-  if (!res.ok) throw data;
-  return data;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    detailsEls.forEach((d) => d.removeAttribute("open"));
+  });
 }
 
-function updateCartUI(rowEl, data) {
-  // update qty input
-  const qtyInput = rowEl.querySelector('.cart-qty');
-  if (qtyInput) qtyInput.value = data.quantity;
+/**
+ * Button add-to-cart loading + anti double click
+ */
+function setupCartLoading() {
+  const forms = document.querySelectorAll("form[data-cart-form='true']");
+  forms.forEach((form) => {
+    const btn = form.querySelector("button[type='submit']");
+    if (!btn) return;
 
-  // item subtotal
-  const itemSubtotal = rowEl.querySelector('.itemSubtotalText');
-  if (itemSubtotal) itemSubtotal.textContent = moneyIDR(data.item_subtotal);
+    form.addEventListener("submit", () => {
+      // prevent double submit
+      if (btn.dataset.loading === "1") return;
+      btn.dataset.loading = "1";
 
-  // cart totals
-  const cartSubtotalText = document.getElementById('cartSubtotalText');
-  const cartSubtotalText2 = document.getElementById('cartSubtotalText2');
-  const cartTotalText = document.getElementById('cartTotalText');
-  const cartItemsCount = document.getElementById('cartItemsCount');
-  const cartItemsCount2 = document.getElementById('cartItemsCount2');
+      btn.classList.add("btn-loading");
+      btn.disabled = true;
 
-  if (cartSubtotalText) cartSubtotalText.textContent = moneyIDR(data.cart_subtotal);
-  if (cartSubtotalText2) cartSubtotalText2.textContent = moneyIDR(data.cart_subtotal);
-  if (cartTotalText) cartTotalText.textContent = moneyIDR(data.cart_subtotal);
+      const original = btn.innerHTML;
+      btn.dataset.original = original;
 
-  if (cartItemsCount) cartItemsCount.textContent = data.cart_items;
-  if (cartItemsCount2) cartItemsCount2.textContent = data.cart_items;
+      // tampilkan spinner + teks
+      btn.innerHTML = `
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Menambahkan...</span>
+      `;
+    });
+  });
 }
 
-function setLoading(rowEl, loading) {
-  const spinner = rowEl.querySelector('.cart-loading');
-  const inc = rowEl.querySelector('.cart-inc');
-  const dec = rowEl.querySelector('.cart-dec');
-  const qty = rowEl.querySelector('.cart-qty');
+/**
+ * Back to top button
+ */
+function setupBackToTop() {
+  const btn = document.getElementById("backToTop");
+  if (!btn) return;
 
-  if (spinner) spinner.classList.toggle('hidden', !loading);
-  if (inc) inc.disabled = loading;
-  if (dec) dec.disabled = loading;
-  if (qty) qty.disabled = loading;
+  const toggle = () => {
+    if (window.scrollY > 450) btn.classList.add("show");
+    else btn.classList.remove("show");
+  };
+
+  toggle();
+  window.addEventListener("scroll", toggle);
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 
-document.addEventListener('click', async (e) => {
-  const rowEl = e.target.closest('[data-cart-row]');
-  if (!rowEl) return;
-
-  const productId = rowEl.getAttribute('data-product-id');
-  if (!productId) return;
-
-  const isInc = e.target.closest('.cart-inc');
-  const isDec = e.target.closest('.cart-dec');
-  if (!isInc && !isDec) return;
-
-  try {
-    setLoading(rowEl, true);
-    const data = await patchQty(productId, isInc ? 'inc' : 'dec');
-    updateCartUI(rowEl, data);
-  } catch (err) {
-    // fallback: kalau error, biarin toast dari server (atau alert simple)
-    console.error(err);
-    alert(err?.message || 'Gagal update qty');
-  } finally {
-    setLoading(rowEl, false);
-  }
-});
-
-document.addEventListener('change', async (e) => {
-  const qtyInput = e.target.closest('.cart-qty');
-  const rowEl = e.target.closest('[data-cart-row]');
-  if (!qtyInput || !rowEl) return;
-
-  const productId = rowEl.getAttribute('data-product-id');
-  const stock = Number(rowEl.getAttribute('data-stock') || 0);
-
-  let val = parseInt(qtyInput.value || '1', 10);
-  if (Number.isNaN(val) || val < 1) val = 1;
-  if (stock > 0) val = Math.min(val, stock);
-
-  try {
-    setLoading(rowEl, true);
-    const data = await patchQty(productId, 'set', val);
-    updateCartUI(rowEl, data);
-  } catch (err) {
-    console.error(err);
-    alert(err?.message || 'Gagal update qty');
-  } finally {
-    setLoading(rowEl, false);
-  }
+document.addEventListener("DOMContentLoaded", () => {
+  setupDetailsAutoClose();
+  setupCartLoading();
+  setupBackToTop();
 });

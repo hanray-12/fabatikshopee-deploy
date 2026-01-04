@@ -1,3 +1,94 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===== Premium UI Layer ===== */
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+}
+
+@layer components {
+  /* Container vibes */
+  .ui-card {
+    @apply bg-white border border-gray-100 rounded-3xl shadow-sm;
+  }
+
+  .ui-chip {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border border-gray-200 bg-white text-gray-700;
+  }
+
+  .ui-btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl font-semibold transition shadow-sm;
+  }
+  .ui-btn-dark {
+    @apply ui-btn bg-gray-900 text-white hover:bg-black;
+  }
+  .ui-btn-red {
+    @apply ui-btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .ui-btn-ghost {
+    @apply ui-btn bg-gray-100 text-gray-900 border border-gray-200 hover:bg-gray-200;
+  }
+
+  .ui-input {
+    @apply w-full rounded-2xl border border-gray-200 bg-white px-4 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300;
+  }
+
+  /* Details dropdown smooth */
+  .ui-details > summary::-webkit-details-marker { display: none; }
+  .ui-details[open] .ui-dropdown {
+    animation: dropIn .14s ease-out both;
+  }
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Product card premium */
+  .product-card {
+    @apply bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm transition;
+  }
+  .product-card:hover {
+    @apply shadow-lg;
+    transform: translateY(-2px);
+  }
+
+  .product-img-wrap {
+    @apply relative overflow-hidden bg-gray-100;
+  }
+  .product-img {
+    @apply w-full h-full object-cover transition duration-300;
+  }
+  .product-card:hover .product-img {
+    transform: scale(1.06);
+  }
+
+  /* Button loading state */
+  .btn-loading {
+    @apply opacity-90 cursor-not-allowed;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: rgba(255,255,255,1);
+    border-radius: 999px;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Back to top */
+  .backtop {
+    @apply fixed bottom-6 right-6 z-50 hidden md:flex items-center justify-center h-11 w-11 rounded-full bg-gray-900 text-white shadow-lg hover:bg-black transition;
+  }
+  .backtop.show { display: flex; }
+
+  /* Subtle grid bg (optional vibes) */
+  .soft-grid {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,.05) 1px, transparent 0);
+    background-size: 26px 26px;
+  }
+}

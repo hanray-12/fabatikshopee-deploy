@@ -33,7 +33,7 @@
         <div class="bg-white border rounded-3xl p-10 text-center shadow-sm">
             <div class="text-3xl">🫙</div>
             <div class="mt-2 font-bold">Keranjang masih kosong</div>
-            <p class="text-sm text-gray-500 mt-1">Cari produk dulu, baru gas checkout.</p>
+            <p class="text-sm text-gray-500 mt-1">yuk belanja batik premium ✨.</p>
             <a href="{{ route('home') }}"
                class="inline-flex mt-4 px-5 py-2.5 rounded-2xl bg-gray-900 text-white font-semibold hover:bg-black transition">
                 Lihat Katalog →
